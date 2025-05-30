@@ -1,0 +1,531 @@
+# configs/default.yaml
+# 헥토 AI 자동차 분류 - 통합 설정 파일
+# 모든 하이퍼파라미터와 실험 설정을 중앙 관리
+
+# ===== 프로젝트 기본 정보 =====
+project_name: "hecto-ai-car-classification-v2"
+experiment_name: null  # null이면 자동 생성
+description: "헥토 AI 챌린지 2025 - 중고차 차종 분류 (396 클래스)"
+version: "2.0"
+
+# ===== 모델 설정 =====
+model:
+  backbone: "efficientnet_b4"  # resnet18/34/50/101, efficientnet_b0~b7, convnext_base, swin_base_patch4_window7_224
+  num_classes: 396
+  pretrained: true
+  custom_head: true  # 커스텀 분류 헤드 사용
+  dropout: 0.3
+  
+  # 모델 자동 추천 (true시 아래 설정 무시)
+  auto_recommend: false
+  auto_recommend_criteria: "balanced"  # fast_training, best_accuracy, balanced, memory_efficient
+
+# ===== 훈련 설정 =====
+train:
+  # 데이터 경로
+  root_dir: "data/train"
+  csv_path: null  # CSV 파일 경로 (없으면 폴더 구조 사용)
+  
+  # 훈련 하이퍼파라미터
+  batch_size: 64
+  epochs: 30  # 100 → 30으로 되돌림 (11 에포크부터 재개)
+  lr: 1e-3
+  weight_decay: 1e-4
+  label_smoothing: 0.1
+  
+  # 검증 설정
+  validation_split: 0.2
+  kfold: 5
+  use_stratified: true
+  
+  # 저장 경로
+  save_dir: "checkpoints_v2"
+  
+  # 재개 훈련
+  resume_path: "checkpoints_v2/checkpoint_fold0_epoch11.pth"  # 11 에포크부터 재개
+  
+  # 전이학습 설정
+  freeze_backbone_epochs: 5  # 처음 N 에포크 동안 백본 동결
+  unfreeze_after_epochs: 10  # N 에포크 후 전체 해제
+  
+  # 최적화기 설정
+  optimizer: "adamw"  # adam, adamw, sgd
+  scheduler: "cosine"  # cosine, step, plateau, onecycle
+  
+  # 조기 종료
+  early_stopping:
+    patience: 7
+    min_delta: 0.001
+    monitor: "val_acc"
+    mode: "max"
+  
+  # 학습률 스케줄러 상세 설정
+  scheduler_params:
+    cosine:
+      T_max: 30
+      eta_min: 1e-6
+    step:
+      step_size: 10
+      gamma: 0.1
+    plateau:
+      factor: 0.5
+      patience: 5
+      threshold: 0.01
+    onecycle:
+      max_lr: 1e-2
+      pct_start: 0.3
+      div_factor: 25
+
+# ===== 데이터 증강 설정 =====
+augmentation:
+  # 증강 레벨
+  level: "car_specific"  # light, medium, heavy, car_specific
+  
+  # 고급 증강 기법
+  use_autoaugment: true
+  use_cutmix: false
+  use_mixup: true
+  use_gridmask: false
+  use_mosaic: false
+  
+  # 증강 파라미터
+  mixup_alpha: 1.0
+  cutmix_alpha: 1.0
+  
+  # 이미지 크기
+  image_size: 224
+  resize_size: 256  # 크롭 전 크기
+  
+  # 정규화 (ImageNet 기본값)
+  normalize:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+# ===== 추론 설정 =====
+inference:
+  # 테스트 데이터
+  test_csv: "data/test.csv"
+  test_dir: "data/test"
+  
+  # 모델 경로
+  model_path: "checkpoints_v2/best_model_fold0.pth"
+  class_mapping_path: "checkpoints_v2/class_to_idx.json"
+  
+  # 배치 처리
+  batch_size: 32
+  num_workers: 4
+  
+  # 출력 설정
+  output_path: "outputs/submission.csv"
+  test_output_dir: "outputs/epoch_submissions/"  # 에포크별 테스트 결과
+  
+  # TTA 설정
+  use_tta: true
+  tta_times: 5
+
+# ===== 앙상블 설정 =====
+ensemble:
+  # 예측 파일 경로
+  pred_dir: "outputs/predictions"
+  
+  # 출력 설정
+  output_dir: "outputs"
+  output_name: "ensemble_submission.csv"
+  
+  # 앙상블 방법
+  method: "weighted_average"  # simple_average, weighted_average, stacking
+  
+  # 가중치 (모델별)
+  weights: null  # null이면 균등 가중치
+  
+  # TTA 설정
+  tta_times: 5
+  tta_weights: [0.3, 0.25, 0.2, 0.15, 0.1]  # TTA 변환별 가중치
+
+# ===== 데이터로더 설정 =====
+dataloader:
+  num_workers: 8
+  pin_memory: true
+  drop_last: true  # 훈련시만
+  persistent_workers: true
+  prefetch_factor: 2
+
+# ===== WandB 로깅 설정 =====
+wandb:
+  enabled: true
+  offline: false
+  project: "hecto-ai-car-classification"
+  entity: null  # 팀/개인 계정명
+  tags: ["car_classification", "efficientnet", "hecto_ai"]
+  notes: "EfficientNet-B4 기반 자동차 분류 실험"
+  
+  # 로깅 상세 설정
+  log_model: true
+  log_gradients: false
+  log_freq: 100
+  save_model_every_epoch: false
+  
+  # 시각화 설정
+  log_predictions: true
+  log_confusion_matrix: true
+  log_learning_curves: true
+
+# ===== 하드웨어 설정 =====
+hardware:
+  # GPU 설정
+  device: "auto"  # auto, cpu, cuda, cuda:0
+  mixed_precision: true  # AMP 사용
+  compile_model: false  # torch.compile 사용 (PyTorch 2.0+)
+  
+  # 메모리 최적화
+  gradient_accumulation_steps: 1
+  max_memory_usage: 0.9  # GPU 메모리 사용률 제한
+  
+  # 분산 훈련 (미래 확장용)
+  distributed: false
+  local_rank: 0
+
+# ===== 실험 추적 설정 =====
+tracking:
+  # 메트릭 추적
+  track_metrics: ["loss", "accuracy", "f1_score", "top5_accuracy"]
+  
+  # 체크포인트 저장
+  save_top_k: 3
+  save_last: true
+  monitor_metric: "val_acc"
+  monitor_mode: "max"
+  
+  # 시각화
+  plot_learning_curves: true
+  save_confusion_matrix: true
+  log_model_architecture: true
+
+# ===== 디버깅 설정 =====
+debug:
+  enabled: false
+  fast_dev_run: false  # 1배치만 실행
+  overfit_batches: 0  # N개 배치로 오버피팅 테스트
+  limit_train_batches: 1.0  # 훈련 데이터 비율 제한
+  limit_val_batches: 1.0  # 검증 데이터 비율 제한
+  
+  # 프로파일링
+  profiler: null  # simple, advanced, pytorch
+  detect_anomaly: false  # 그래디언트 이상 감지
+
+# ===== 데이터 품질 설정 =====
+data_quality:
+  # 이미지 검증
+  min_image_size: 32
+  max_aspect_ratio: 10.0
+  allowed_formats: [".jpg", ".jpeg", ".png", ".bmp"]
+  
+  # 데이터 정제
+  remove_corrupted: true
+  remove_duplicates: false
+  
+  # 클래스 불균형 처리
+  use_class_weights: false
+  use_balanced_sampler: false
+  min_samples_per_class: 10
+
+# ===== 성능 벤치마킹 =====
+benchmark:
+  enabled: false
+  
+  # 추론 속도 측정
+  measure_inference_time: true
+  warmup_runs: 10
+  benchmark_runs: 100
+  
+  # 메모리 사용량 측정
+  measure_memory_usage: true
+  
+  # 배치 크기별 성능 테스트
+  test_batch_sizes: [16, 32, 64, 128]
+
+# ===== 실험 변형 설정 =====
+# Hydra sweep용 매개변수 공간 정의
+sweep:
+  # 모델 변형
+  model_variants:
+    - "resnet50"
+    - "efficientnet_b3"
+    - "efficientnet_b4"
+    - "convnext_base"
+  
+  # 학습률 범위
+  lr_range: [1e-4, 1e-3, 5e-3]
+  
+  # 배치 크기 옵션
+  batch_size_options: [16, 32, 64]
+  
+  # 증강 레벨 옵션
+  augmentation_levels: ["medium", "heavy", "car_specific"]
+
+# ===== 환경별 설정 오버라이드 =====
+defaults:
+  - _self_
+  - override hydra/launcher: basic
+
+# 개발 환경
+development:
+  train:
+    epochs: 5
+    batch_size: 16
+  debug:
+    enabled: true
+    fast_dev_run: true
+  wandb:
+    offline: true
+
+# 프로덕션 환경
+production:
+  train:
+    epochs: 50
+    batch_size: 64
+  hardware:
+    mixed_precision: true
+    compile_model: true
+  wandb:
+    enabled: true
+    offline: false
+
+# GPU 메모리별 최적화 설정
+gpu_4gb:
+  train:
+    batch_size: 16
+  inference:
+    batch_size: 16
+  hardware:
+    mixed_precision: true
+    gradient_accumulation_steps: 2
+
+gpu_8gb:
+  train:
+    batch_size: 32
+  inference:
+    batch_size: 32
+  hardware:
+    mixed_precision: true
+
+gpu_12gb_plus:
+  train:
+    batch_size: 64
+  inference:
+    batch_size: 64
+  model:
+    backbone: "efficientnet_b6"  # 더 큰 모델 사용 가능
+
+# ===== 모델별 최적 설정 =====
+model_configs:
+  resnet50:
+    train:
+      lr: 1e-3
+      batch_size: 64
+    augmentation:
+      level: "medium"
+  
+  efficientnet_b4:
+    train:
+      lr: 5e-4
+      batch_size: 32
+    augmentation:
+      level: "car_specific"
+      use_autoaugment: true
+  
+  convnext_base:
+    train:
+      lr: 5e-4
+      batch_size: 32
+      scheduler: "cosine"
+    augmentation:
+      level: "heavy"
+      use_mixup: true
+
+# ===== 데이터셋별 설정 =====
+dataset_configs:
+  small:  # < 10K 이미지
+    train:
+      epochs: 50
+      lr: 1e-3
+    model:
+      backbone: "resnet50"
+    augmentation:
+      level: "heavy"
+  
+  medium:  # 10K - 100K 이미지
+    train:
+      epochs: 30
+      lr: 5e-4
+    model:
+      backbone: "efficientnet_b4"
+    augmentation:
+      level: "car_specific"
+  
+  large:  # > 100K 이미지
+    train:
+      epochs: 20
+      lr: 1e-4
+    model:
+      backbone: "efficientnet_b6"
+    augmentation:
+      level: "medium"
+
+# ===== 실험 시나리오 =====
+scenarios:
+  # 빠른 프로토타입
+  quick_prototype:
+    train:
+      epochs: 10
+      batch_size: 64
+    model:
+      backbone: "resnet18"
+    augmentation:
+      level: "light"
+    debug:
+      enabled: true
+  
+  # 최고 성능 추구
+  best_performance:
+    train:
+      epochs: 100
+      batch_size: 32
+      freeze_backbone_epochs: 10
+    model:
+      backbone: "efficientnet_b6"
+      custom_head: true
+    augmentation:
+      level: "heavy"
+      use_autoaugment: true
+      use_mixup: true
+    ensemble:
+      method: "weighted_average"
+    
+  # 메모리 효율적
+  memory_efficient:
+    train:
+      batch_size: 16
+      gradient_accumulation_steps: 4
+    model:
+      backbone: "efficientnet_b0"
+    hardware:
+      mixed_precision: true
+    inference:
+      batch_size: 16
+
+# ===== 하이퍼파라미터 탐색 설정 =====
+optuna:
+  enabled: false
+  n_trials: 50
+  timeout: 3600  # 1시간
+  
+  # 탐색 공간
+  search_space:
+    lr: [1e-5, 1e-2]  # log uniform
+    batch_size: [16, 32, 64]  # categorical
+    dropout: [0.1, 0.5]  # uniform
+    weight_decay: [1e-6, 1e-3]  # log uniform
+  
+  # 목적 함수
+  objective: "val_acc"
+  direction: "maximize"
+
+# ===== 출력 및 로깅 디렉토리 =====
+paths:
+  data_root: "data"
+  output_root: "outputs"
+  checkpoint_root: "checkpoints_v2"
+  log_root: "logs"
+  cache_root: ".cache"
+  
+  # 자동 생성될 서브디렉토리
+  create_dirs:
+    - "${paths.output_root}/predictions"
+    - "${paths.output_root}/visualizations"
+    - "${paths.output_root}/epoch_submissions"
+    - "${paths.checkpoint_root}"
+    - "${paths.log_root}"
+
+# ===== 런타임 설정 =====
+runtime:
+  # 재현성
+  seed: 42
+  deterministic: true
+  benchmark: false  # cudnn.benchmark
+  
+  # 오류 처리
+  ignore_warnings: true
+  strict_loading: false  # 모델 로딩시 엄격한 키 매칭
+  
+  # 진행 상황 표시
+  progress_bar: true
+  verbose: true
+  
+  # 자동 정리
+  auto_cleanup: true  # 임시 파일 자동 삭제
+  keep_last_n_checkpoints: 5
+
+# ===== 검증 및 테스트 설정 =====
+validation:
+  # 교차 검증
+  cross_validation: true
+  cv_folds: 5
+  
+  # 홀드아웃 검증
+  holdout_ratio: 0.15
+  
+  # 테스트 시간 증강
+  tta_enabled: true
+  tta_crops: 5
+  tta_flips: true
+
+# ===== 모델 배포 설정 =====
+deployment:
+  # 모델 최적화
+  optimize_for_inference: true
+  quantization: false
+  pruning: false
+  
+  # 내보내기 형식
+  export_formats: ["pytorch", "onnx"]
+  
+  # 성능 요구사항
+  target_latency_ms: 100
+  target_memory_mb: 500
+
+# ===== 알림 설정 =====
+notifications:
+  enabled: false
+  
+  # 완료 알림
+  on_completion: false
+  on_error: true
+  
+  # 알림 방법
+  methods: ["email", "slack"]  # 구현 필요
+  
+  # 알림 조건
+  notify_on_improvement: true
+  improvement_threshold: 0.01
+
+# ===== 메타데이터 =====
+metadata:
+  author: "Hecto AI Team"
+  created_date: "2025-05-27"
+  last_modified: "2025-05-27"
+  config_version: "2.0"
+  
+  # 실험 태그
+  tags:
+    - "car_classification"
+    - "efficientnet"
+    - "hecto_ai_challenge"
+    - "v2"
+  
+  # 설명
+  description: |
+    헥토 AI 챌린지 2025 중고차 차종 분류 대회용 설정
+    - 396개 클래스 분류
+    - EfficientNet 기반 모델
+    - 고급 데이터 증강 및 앙상블 기법 적용

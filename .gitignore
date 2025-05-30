@@ -1,0 +1,140 @@
+# 🚗 차량 분류 프로젝트 .gitignore
+
+# ===== 데이터 파일들 =====
+# 대용량 이미지 데이터
+data/train/
+data/test/
+data/sample_submission.csv
+data/*.csv
+data/*.zip
+data/*.tar.gz
+
+# ===== 학습 결과물들 =====
+# 모델 파일들
+outputs/
+models/
+checkpoints/
+*.pth
+*.pt
+*.pkl
+*.h5
+*.onnx
+
+# 로그 파일들
+logs/
+wandb/
+tensorboard/
+*.log
+*.out
+training.out
+
+# ===== Python 관련 =====
+# 가상환경
+venv/
+env/
+.venv/
+.env/
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ===== 시스템 파일들 =====
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ===== IDE 설정 =====
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ===== 환경 변수 및 설정 =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# API 키 및 민감한 정보
+config/secrets.yaml
+config/api_keys.json
+*.key
+*.pem
+
+# ===== 임시 파일들 =====
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# ===== 압축 파일들 =====
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ===== 기타 =====
+# 실험 결과
+experiments/
+results/
+submissions/
+
+# 캐시
+.cache/
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# 번역 파일
+*.mo
+*.pot 
