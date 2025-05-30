@@ -7,7 +7,7 @@
 - **평가지표**: Log Loss
 - **모델**: EfficientNet 기반 분류 모델
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 hecto_ai_challenge/
@@ -48,7 +48,7 @@ hecto_ai_challenge/
 └── submission_folder_based.csv  # 최고 성능 제출 파일
 ```
 
-## 🚀 빠른 시작
+## 빠른 시작
 
 ### 1. 환경 설정
 
@@ -92,7 +92,7 @@ python scripts/train_ensemble.py [예측_파일_디렉토리] [출력_파일명]
 python scripts/train_ensemble.py . submission_ensemble.csv
 ```
 
-## 📊 성능 결과
+## 성능 결과
 
 ### 최고 성능 모델
 - **파일**: `submission_folder_based.csv`
@@ -107,7 +107,7 @@ python scripts/train_ensemble.py . submission_ensemble.csv
 - **배치 크기**: 64
 - **에포크**: 30 (Early Stopping 적용)
 
-## 🔧 주요 기능
+## 주요 기능
 
 ### 1. 메모리 최적화
 - 16GB 훈련 메모리, 8GB 검증 메모리
@@ -149,13 +149,13 @@ python scripts/train_ensemble.py . submission_ensemble.csv
 # config/default.yaml에서 wandb.enabled: true
 ```
 
-## 🎯 다음 단계
+## 다음 단계
 
 1. **최종 제출**: `submission_folder_based.csv` 사용
 2. **성능 개선**: 앙상블 또는 추가 데이터 증강
 3. **모델 실험**: 다른 백본 모델 시도
 
-## 📞 문제 해결
+## 문제 해결
 
 ### 자주 발생하는 문제
 
